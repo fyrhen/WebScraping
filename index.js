@@ -22,6 +22,10 @@ async function getNews() {
     $(".news-list-card").each((index, element) => {
       const title = $(element).find(".heading-size-2 a").text().trim();
       const link = $(element).find("a").attr("href");
+      const time = $(element)
+        .find(".news-list-card-content-byline-date")
+        .text()
+        .trim();
 
       let thumbnail = null;
       const style = $(element)
@@ -41,6 +45,7 @@ async function getNews() {
         title,
         link: link ? new URL(link, url).href : null,
         thumbnail: thumbnail ? new URL(thumbnail, url).href : null,
+        time,
       });
     });
 
