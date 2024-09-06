@@ -85,7 +85,7 @@ async function savePostedNews(news) {
     await git.cwd(repoDir);
     await git.add(postedNewsFile);
     await git.commit("Update postedNews.json");
-    await git.push("origin", "main");
+    await git.push("origin", "master");
     console.log("Repositório remoto atualizado com sucesso.");
 
     fs.rmSync(repoDir, { recursive: true, force: true });
