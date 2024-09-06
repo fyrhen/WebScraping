@@ -2,7 +2,6 @@ require("dotenv").config();
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
-const sharp = require("sharp");
 const path = require("path");
 const simpleGit = require("simple-git");
 const { execSync } = require("child_process");
@@ -10,7 +9,6 @@ const git = simpleGit();
 
 const url = process.env.URL;
 const postedNewsFile = "postedNews.json";
-const tempDir = "temp";
 const repoDir = "novopositorio";
 
 async function getNews() {
@@ -22,10 +20,9 @@ async function getNews() {
     $(".news-list-card").each((index, element) => {
       const title = $(element).find(".heading-size-2 a").text().trim();
       const link = $(element).find("a").attr("href");
-      const time = $(element)
-        .find(".news-list-card-content-byline-date")
-        .text()
-        .trim();
+
+      const currentDate = new Date();
+      const formattedDate = currentDate.toISOString();
 
       let thumbnail = null;
       const style = $(element)
@@ -45,7 +42,7 @@ async function getNews() {
         title,
         link: link ? new URL(link, url).href : null,
         thumbnail: thumbnail ? new URL(thumbnail, url).href : null,
-        time,
+        time: formattedDate,
       });
     });
 
@@ -99,35 +96,7 @@ async function savePostedNews(news) {
   }
 }
 
-async function downloadAndOptimizeImage(url, outputPath) {
-  const response = await axios({
-    url,
-    responseType: "arraybuffer",
-  });
-  const buffer = Buffer.from(response.data, "binary");
-  await sharp(buffer).resize(800).toFile(outputPath);
-}
-
-async function postToThreads(newsItem) {
-  try {
-    let attachment = null;
-    if (newsItem.thumbnail) {
-      const imagePath = path.join(tempDir, `${Date.now()}.jpg`);
-      await downloadAndOptimizeImage(newsItem.thumbnail, imagePath);
-      attachment = { image: imagePath };
-    }
-
-    console.log(`Successfully posted news: ${newsItem.title}`);
-  } catch (error) {
-    console.error(`Error posting the news: ${error.message}`);
-  }
-}
-
 async function main() {
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
-  }
-
   const [news, postedNews] = await Promise.all([getNews(), loadPostedNews()]);
   const newPostedNews = [...postedNews];
 
@@ -137,15 +106,12 @@ async function main() {
     );
 
     if (!alreadyPosted) {
-      await postToThreads(newsItem);
       newPostedNews.push(newsItem);
     }
   });
 
   await Promise.all(tasks);
   await savePostedNews(newPostedNews);
-
-  fs.rmSync(tempDir, { recursive: true, force: true });
 }
 
 main();
